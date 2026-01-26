@@ -27,5 +27,5 @@ torchrun --nnodes=1 --nproc_per_node=1 ptq.py \
 --k_groupsize 128 \
 --v_groupsize 128 \
 --rotate \
---optimized_rotation_path "your_path/R.bin" \
+--optimized_rotation_path "optimized_rotations/R.bin" \
 

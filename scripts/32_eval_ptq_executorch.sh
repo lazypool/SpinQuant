@@ -22,6 +22,6 @@ torchrun --nnodes=1 --nproc_per_node=1 ptq.py \
 --w_groupsize 32 \
 --a_asym \
 --rotate \
---optimized_rotation_path "your_path/R.bin" \
---save_qmodel_path "./your_output_model_path/consolidated.00.pth" \
+--optimized_rotation_path "optimized_rotations/R.bin" \
+--save_qmodel_path "./output_models/consolidated.00.pth" \
 --export_to_et
