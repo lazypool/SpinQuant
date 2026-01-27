@@ -22,12 +22,12 @@ from train_utils.fsdp_trainer import FSDPTrainer
 from train_utils.main import prepare_model
 from train_utils.modeling_llama_quant import LlamaForCausalLM as LlamaForCausalLMQuant
 from utils.data_utils import CustomJsonDataset
-from utils.hadamard_utils import random_hadamard_matrix
 from utils.process_args import process_args_ptq
 from utils.utils import get_local_rank, get_logger, pt_fsdp_state_dict
 
 from forward_only.rotation_model import RotateModule
 from forward_only.policy_gradient_optimizer import PolicyGradientOptimizer
+from forward_only.forward_only_trainer import ForwardOnlyTrainer
 
 log: Logger = get_logger("spinquant")
 
@@ -102,7 +102,7 @@ def train() -> None:
     ]
     model.seqlen = training_args.model_max_length
     optimizer = PolicyGradientOptimizer(trainable_parameters, trainable_modules, lr=training_args.learning_rate)
-    MyTrainer = Trainer
+    MyTrainer = ForwardOnlyTrainer
     # Use FSDP for 70B rotation training
     if training_args.fsdp != "" and training_args.fsdp != []:
         MyTrainer = FSDPTrainer

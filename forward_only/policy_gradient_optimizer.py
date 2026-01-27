@@ -1,3 +1,13 @@
+# coding=utf-8
+# Copyright (c) xiaoxiao lazypool@proton.me
+# All rights reserved.
+#
+# This source code is licensed under the license found in the
+# LICENSE file in the root directory of this source tree.
+
+# This code is based on SpinQuant(https://github.com/faceresearch/SpinQuant/tree/main/SpinQuant).
+# Licensed under Apache License 2.0.
+
 from forward_only.rotation_model import RotateModule
 import torch
 from torch.optim.optimizer import Optimizer
