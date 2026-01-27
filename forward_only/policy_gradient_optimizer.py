@@ -3,13 +3,13 @@ import torch
 from torch.optim.optimizer import Optimizer
 
 class PolicyGradientOptimizer(Optimizer):
-    def __init__(self, modules, lr=1e-3, T=5) -> None:
+    def __init__(self, params, modules, lr=1e-3, T=5) -> None:
         if lr < 0.0:
             raise ValueError(f"Invalid learning rate: {lr}")
         if T <= 0:
             raise ValueError(f"Invalid T value: {T}")
         defaults = dict(lr=lr, T=T)
-        super().__init__([], defaults)
+        super().__init__(params, defaults)
         self.baseline = 0.0
         self.rotate_modules = modules
 

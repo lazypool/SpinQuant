@@ -96,8 +96,12 @@ def train() -> None:
         model.model.layers[i].self_attn.R2
         for i in range(model.config.num_hidden_layers)
     ]
+    trainable_parameters = [model.R1.weight] + [
+        model.model.layers[i].self_attn.R2.weight
+        for i in range(model.config.num_hidden_layers)
+    ]
     model.seqlen = training_args.model_max_length
-    optimizer = PolicyGradientOptimizer(trainable_modules, lr=training_args.learning_rate)
+    optimizer = PolicyGradientOptimizer(trainable_parameters, trainable_modules, lr=training_args.learning_rate)
     MyTrainer = Trainer
     # Use FSDP for 70B rotation training
     if training_args.fsdp != "" and training_args.fsdp != []:
