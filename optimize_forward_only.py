@@ -22,6 +22,7 @@ from train_utils.fsdp_trainer import FSDPTrainer
 from train_utils.main import prepare_model
 from train_utils.modeling_llama_quant import LlamaForCausalLM as LlamaForCausalLMQuant
 from utils.data_utils import CustomJsonDataset
+from utils.hadamard_utils import random_hadamard_matrix
 from utils.process_args import process_args_ptq
 from utils.utils import get_local_rank, get_logger, pt_fsdp_state_dict
 
@@ -60,12 +61,14 @@ def train() -> None:
         model.lm_head.weight.data = model.model.embed_tokens.weight.data.clone()
 
     model = prepare_model(ptq_args, model)
-    model.R1 = RotateModule(model.config.hidden_size, "cuda")
+    R1 = random_hadamard_matrix(model.config.hidden_size, "cuda")
+    model.R1 = RotateModule(R1)
     for i in range(model.config.num_hidden_layers):
         # Each head dim = 128 for Llama model
-        model.model.layers[i].self_attn.R2 = RotateModule(
+        R2 = random_hadamard_matrix(
             model.config.hidden_size // model.config.num_attention_heads, "cuda"
         )
+        model.model.layers[i].self_attn.R2 = RotateModule(R2)
     for param in model.parameters():
         param.requires_grad = False
     if local_rank == 0:

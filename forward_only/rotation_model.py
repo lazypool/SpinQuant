@@ -12,23 +12,26 @@ import torch
 from torch import nn
 
 class RotateModule(nn.Module):
-    def __init__(self, n, device) -> None:
+    def __init__(self, R_init) -> None:
         super(RotateModule, self).__init__()
+        n, device = R_init.shape[0], torch.device("cuda")
         self.m, self.n = n * (n - 1) // 2, n
-        self.device = device
-        self.mu = nn.Parameter(torch.zeros(self.m, device=self.device, dtype=torch.float32))
-        self.rho = nn.Parameter(torch.zeros(self.m, device=self.device, dtype=torch.float32))
+        self.R_init = R_init.to(torch.float32).to(device)
 
+        self.mu = torch.zeros(self.m).to(torch.float32).to(device)
+        self.rho = torch.zeros(self.m).to(torch.float32).to(device)
+        self.weight = nn.Parameter(self.get_rotation())
+
+    @torch.no_grad()
     def forward(self, x, transpose=False):
-        self.weight = self.get_rotation()
+        self.weight.data.copy_(self.get_rotation())
         if transpose:
             return x @ self.weight
         else:
             return self.weight @ x
 
-    @torch.no_grad()
     def get_rotation(self, training=True):
-        noise = torch.randn(self.m, device=self.device, dtype=torch.float32)
+        noise = torch.randn(self.m, device=self.mu.device, dtype=torch.float32)
         if training:
             a = self.mu + noise * torch.exp(self.rho)
         else:
@@ -44,9 +47,8 @@ class RotateModule(nn.Module):
         I = torch.eye(self.n, device=A.device, dtype=A.dtype)
         R = (I + A) @ torch.inverse(I - A) # cayley-transform
 
-        return R
+        return self.R_init @ R
 
-    @torch.no_grad()
     def compute_grad(self):
         sigma_2 = torch.exp(self.rho)**2
         diff = self.a_cache - self.mu
@@ -56,7 +58,8 @@ class RotateModule(nn.Module):
 
         return grad_mu, grad_rho
 
-    @torch.no_grad()
     def update_param(self, mu, rho):
+        mu = mu.to(self.mu.device)
+        rho = rho.to(self.rho.device)
         self.mu.data.copy_(mu)
         self.rho.data.copy_(rho)
