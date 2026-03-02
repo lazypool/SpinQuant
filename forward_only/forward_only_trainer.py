@@ -13,7 +13,15 @@ from forward_only.policy_gradient_optimizer import PolicyGradientOptimizer
 
 
 class ForwardOnlyTrainer(Trainer):
+    def __init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
+        self._batch_idx = 0
+        self._total_batches = None
+
     def training_step(self, model, inputs):
+        if self.total_batches is None:
+            self._total_batches = len(self.get_train_dataloader())
+
         model.train()
         inputs = self._prepare_inputs(inputs)
 

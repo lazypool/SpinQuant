@@ -13,15 +13,13 @@ import torch
 from torch.optim.optimizer import Optimizer
 
 class PolicyGradientOptimizer(Optimizer):
-    def __init__(self, params, modules, lr=1e-3, T=5) -> None:
-        if lr < 0.0:
-            raise ValueError(f"Invalid learning rate: {lr}")
-        if T <= 0:
-            raise ValueError(f"Invalid T value: {T}")
-        defaults = dict(lr=lr, T=T)
+    def __init__(self, params, modules, lr=1e-3, T=5, N=100) -> None:
+        defaults = dict()
         super().__init__(params, defaults)
+        self.lr, self.T, self.N = lr, T, N
         self.baseline = 0.0
         self.rotate_modules = modules
+        self.samples = list()
 
     @torch.no_grad()
     def step(self, closure=None):
@@ -32,20 +30,42 @@ class PolicyGradientOptimizer(Optimizer):
             return None
         if isinstance(loss, torch.Tensor):
             loss = loss.item()
-        loss = loss - self.baseline
 
-        lr = self.param_groups[0]['lr']
-        T = self.param_groups[0]['T']
+        lr, T, N = self.lr, self.T, self.N
 
+        # sampling on all modules
+        grads = list()
         for module in self.rotate_modules:
             assert isinstance(module, RotateModule)
             mu_grad, rho_grad = module.compute_grad()
-            module.update_param(
-                mu = module.mu - lr * loss * mu_grad,
-                rho = module.rho - lr * loss * rho_grad
-            )
+            grads.append((mu_grad, rho_grad))
+        self.samples.append({'loss': loss, 'grads': grads})
 
-        # update baseline
-        self.baseline = (T - 1) / T * self.baseline + (1 / T) * loss
+        if len(self.samples) == N:
+            # calculate average loss
+            avg_loss = sum(sample['loss'] for sample in self.samples) / N
+
+            # update baseline
+            self.baseline = (T - 1) / T * self.baseline + (1 / T) * avg_loss
+
+            # calculate average grad with baseline
+            avg_grads = [[0.0, 0.0] for _ in range(0, len(self.rotate_modules))]
+            for sample in self.samples:
+                loss_ = sample['loss'] - self.baseline
+                for i, grad in enumerate(sample['grads']):
+                    avg_grads[i][0] += loss_ * grad[0] # μ
+                    avg_grads[i][1] += loss_ * grad[1] # ρ
+            for i in range(0, len(self.rotate_modules)):
+                avg_grads[i][0] /= N
+                avg_grads[i][1] /= N
+
+            # update params
+            for module, grad in zip(self.rotate_modules, avg_grads):
+                assert isinstance(module, RotateModule)
+                module.update_param(
+                    module.mu - lr * grad[0],
+                    module.rho - lr * grad[1]
+                )
+            self.samples.clear()
 
         return loss
