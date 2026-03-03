@@ -36,7 +36,6 @@ class PolicyGradientOptimizer(Optimizer):
         # sampling on all modules
         grads = list()
         for module in self.rotate_modules:
-            assert isinstance(module, RotateModule)
             mu_grad, rho_grad = module.compute_grad()
             grads.append((mu_grad, rho_grad))
         self.samples.append({'loss': loss, 'grads': grads})
@@ -61,7 +60,6 @@ class PolicyGradientOptimizer(Optimizer):
 
             # update params
             for module, grad in zip(self.rotate_modules, avg_grads):
-                assert isinstance(module, RotateModule)
                 module.update_param(
                     module.mu - lr * grad[0],
                     module.rho - lr * grad[1]
