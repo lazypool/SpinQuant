@@ -13,13 +13,13 @@ from forward_only.policy_gradient_optimizer import PolicyGradientOptimizer
 
 
 class ForwardOnlyTrainer(Trainer):
-    def __init__(self, *args, **kwargs)
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._batch_idx = 0
         self._total_batches = None
 
     def training_step(self, model, inputs):
-        if self.total_batches is None:
+        if self._total_batches is None:
             self._total_batches = len(self.get_train_dataloader())
 
         model.train()
@@ -29,6 +29,6 @@ class ForwardOnlyTrainer(Trainer):
             loss = self.compute_loss(model, inputs)
 
         assert isinstance(self.optimizer, PolicyGradientOptimizer)
-        self.optimizer.step(lambda: loss)
+        loss = self.optimizer.step(lambda: loss)
 
         return loss.detach()

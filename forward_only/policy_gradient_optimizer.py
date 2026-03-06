@@ -14,7 +14,7 @@ from torch.optim.optimizer import Optimizer
 
 class PolicyGradientOptimizer(Optimizer):
     def __init__(self, params, modules, lr=1e-3, T=5, N=100) -> None:
-        defaults = dict()
+        defaults = dict(lr=lr)
         super().__init__(params, defaults)
         self.lr, self.T, self.N = lr, T, N
         self.baseline = 0.0
