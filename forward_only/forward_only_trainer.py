@@ -27,8 +27,6 @@ class ForwardOnlyTrainer(Trainer):
 
         with self.compute_loss_context_manager():
             loss = self.compute_loss(model, inputs)
-
-        assert isinstance(self.optimizer, PolicyGradientOptimizer)
         loss = self.optimizer.step(lambda: loss)
 
         return loss.detach()
