@@ -13,11 +13,11 @@ import torch.distributed as dist
 from torch.optim.optimizer import Optimizer
 
 class PolicyGradientOptimizer(Optimizer):
-    def __init__(self, params, modules, lr=1e-3, T=5, N=10) -> None:
+    def __init__(self, params, modules, lr=1e-3, T=5, N=1) -> None:
         defaults = dict(lr=lr)
         super().__init__(params, defaults)
         self.lr, self.T, self.N = lr, T, N
-        self.baseline = 0.0
+        self.baseline = None
         self.rotate_modules = modules
         self.samples = list()
 
@@ -54,7 +54,10 @@ class PolicyGradientOptimizer(Optimizer):
                 avg_loss = avg_loss_.item()
 
             # update baseline
-            self.baseline = (T - 1) / T * self.baseline + (1 / T) * avg_loss
+            if not self.baseline:
+                self.baseline = avg_loss
+            else:
+                self.baseline = (T - 1) / T * self.baseline + (1 / T) * avg_loss
 
             # calculate average grad with baseline
             avg_grads = [[0.0, 0.0] for _ in range(len(self.rotate_modules))]

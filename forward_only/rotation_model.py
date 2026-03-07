@@ -45,7 +45,8 @@ class RotateModule(nn.Module):
         I = torch.eye(self.n, device=A.device, dtype=A.dtype)
         R = (I + A) @ torch.inverse(I - A) # cayley-transform
 
-        return self.R_init @ R
+        # return self.R_init @ R
+        return R
 
     def compute_grad(self):
         diff = self.a_cache - self.mu
@@ -60,7 +61,7 @@ class RotateModule(nn.Module):
     def update_param(self, mu, rho):
         mu = mu.to(self.mu.device)
         rho = rho.to(self.rho.device)
-        mu = torch.clamp(mu, -3.0, 3.0)
-        rho = torch.clamp(rho, -3.0, 3.0)
+        mu = torch.clamp(mu, -6.0, 6.0)
+        rho = torch.clamp(rho, 0.0, 2.0)
         self.mu.data.copy_(mu)
         self.rho.data.copy_(rho)
