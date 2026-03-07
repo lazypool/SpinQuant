@@ -40,6 +40,10 @@ class PolicyGradientOptimizer(Optimizer):
             grads.append((mu_grad, rho_grad))
         self.samples.append({'loss': loss, 'grads': grads})
 
+        if dist.get_rank() == 0:
+            print(f"[Rank 0] Module 0 mu = {self.rotate_modules[0].mu.mean().item()}")
+            print(f"[Rank 0] Module 0 rho = {self.rotate_modules[0].rho.mean().item()}")
+
         if len(self.samples) == N:
             # calculate average loss
             avg_loss = sum(sample['loss'] for sample in self.samples) / N
