@@ -10,6 +10,7 @@
 
 import torch
 from torch import nn
+from torch.nn.functional import softplus, sigmoid
 
 class RotateModule(nn.Module):
     def __init__(self, R_init) -> None:
@@ -30,12 +31,9 @@ class RotateModule(nn.Module):
         else:
             return self.weight @ x
 
-    def get_rotation(self, training=True):
+    def get_rotation(self):
         noise = torch.randn(self.m, device=self.mu.device, dtype=torch.float32)
-        if training:
-            a = self.mu + noise * torch.exp(self.rho)
-        else:
-            a = self.mu
+        a = self.mu + noise * softplus(self.rho) # softplus
         self.a_cache = a.detach() # used to compute grad
         
         # generate skew matrix
@@ -50,16 +48,19 @@ class RotateModule(nn.Module):
         return self.R_init @ R
 
     def compute_grad(self):
-        sigma_2 = torch.exp(self.rho)**2
         diff = self.a_cache - self.mu
+        sigma = softplus(self.rho) + 1e-3
+        me = sigmoid(self.rho) / sigma
 
-        grad_mu = diff / sigma_2
-        grad_rho = (diff**2 / sigma_2) - 1
+        grad_mu = diff / sigma**2
+        grad_rho = me * (diff**2 / sigma**2 - 1)
 
         return grad_mu, grad_rho
 
     def update_param(self, mu, rho):
         mu = mu.to(self.mu.device)
         rho = rho.to(self.rho.device)
+        mu = torch.clamp(mu, -3.0, 3.0)
+        rho = torch.clamp(rho, -3.0, 3.0)
         self.mu.data.copy_(mu)
         self.rho.data.copy_(rho)

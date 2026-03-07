@@ -43,6 +43,7 @@ class PolicyGradientOptimizer(Optimizer):
         if dist.get_rank() == 0:
             print(f"[Rank 0] Module 0 mu = {self.rotate_modules[0].mu.mean().item()}")
             print(f"[Rank 0] Module 0 rho = {self.rotate_modules[0].rho.mean().item()}")
+            print(f"[Rank 0] baseline = {self.baseline} loss = {loss}")
 
         if len(self.samples) == N:
             # calculate average loss
